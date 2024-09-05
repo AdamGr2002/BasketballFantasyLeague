@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react'
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -11,8 +12,16 @@ import Link from 'next/link'
 export function WelcomeDashboard({ user }) {
   const team = useQuery(api.myFunctions.getTeam, { userId: user.id });
   const addPlayer = useMutation(api.myFunctions.addPlayerToTeam);
+  const availablePlayers = useQuery(api.myFunctions.getAvailablePlayers);
 
-  if (!team) return <div>Loading team data...</div>;
+  if (!team || !availablePlayers) return <div>Loading team data...</div>;
+
+  const handleAddPlayer = () => {
+    if (availablePlayers.length > 0) {
+      const randomPlayer = availablePlayers[Math.floor(Math.random() * availablePlayers.length)];
+      addPlayer({ teamId: team._id, playerId: randomPlayer._id });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -42,7 +51,7 @@ export function WelcomeDashboard({ user }) {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{team.totalPoints}</div>
+            <div className="text-2xl font-bold">{team.totalPoints.toFixed(1)}</div>
             <p className="text-xs text-muted-foreground">+20% from last week</p>
           </CardContent>
         </Card>
@@ -88,7 +97,7 @@ export function WelcomeDashboard({ user }) {
               <div key={player._id} className="flex justify-between items-center">
                 <div>{player.name} - {player.position}</div>
                 <div className="text-muted-foreground">
-                  {player.stats.points} pts, {player.stats.rebounds} reb, {player.stats.assists} ast
+                  {player.stats.points.toFixed(1)} pts, {player.stats.rebounds.toFixed(1)} reb, {player.stats.assists.toFixed(1)} ast
                 </div>
               </div>
             ))}
@@ -122,8 +131,8 @@ export function WelcomeDashboard({ user }) {
       </Card>
 
       <div className="flex justify-end space-x-4">
-        <Button onClick={() => addPlayer({ teamId: team._id, playerName: "New Player", position: "PG" })}>
-          Add Player
+        <Button onClick={handleAddPlayer} disabled={team.players.length >= 10 || availablePlayers.length === 0}>
+          Add Random Player
         </Button>
         <Button asChild>
           <Link href="/league-standings">League Standings</Link>
